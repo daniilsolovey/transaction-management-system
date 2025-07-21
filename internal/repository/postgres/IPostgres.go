@@ -16,8 +16,8 @@ type Repository struct {
 }
 
 type IRepository interface {
-	SaveTransaction(ctx context.Context, tx domain.Transaction) error
-	GetFilteredTransactions(ctx context.Context, userID string, txType string) ([]domain.Transaction, error)
+	SaveTransaction(ctx context.Context, transaction domain.Transaction) error
+	GetFilteredTransactions(ctx context.Context, userID string, transactionType string) ([]domain.Transaction, error)
 	Close()
 }
 

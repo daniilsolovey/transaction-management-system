@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	kafka_broker "github.com/daniilsolovey/transaction-management-system/internal/delivery/kafka"
 	"github.com/daniilsolovey/transaction-management-system/internal/domain"
 	"github.com/daniilsolovey/transaction-management-system/internal/usecase"
 	"github.com/gin-gonic/gin"
@@ -13,17 +14,19 @@ import (
 )
 
 type TransactionHandler struct {
-	uc  *usecase.TransactionUseCase
-	log *slog.Logger
+	uc     *usecase.TransactionUseCase
+	log    *slog.Logger
+	writer *kafka_broker.Writer
 }
 
-func NewTransactionHandler(uc *usecase.TransactionUseCase, log *slog.Logger) *TransactionHandler {
-	return &TransactionHandler{uc: uc, log: log}
+func NewTransactionHandler(uc *usecase.TransactionUseCase, log *slog.Logger, writer *kafka_broker.Writer) *TransactionHandler {
+	return &TransactionHandler{uc: uc, log: log, writer: writer}
 }
 
 func (h *TransactionHandler) RegisterRoutes() *gin.Engine {
 	r := gin.Default()
 	r.GET("/transactions", h.getTransactions)
+	r.POST("/transactions", h.createTransaction)
 
 	// Swagger UI
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -33,9 +36,9 @@ func (h *TransactionHandler) RegisterRoutes() *gin.Engine {
 // getTransactions handles requests to query transactions.
 func (h *TransactionHandler) getTransactions(c *gin.Context) {
 	userID := c.Query("user_id")
-	txType := c.Query("type") // e.g., "bet" or "win"
+	transactionType := c.Query("type") //  "bet" or "win"
 
-	transactions, err := h.uc.Get(c.Request.Context(), userID, txType)
+	transactions, err := h.uc.Get(c.Request.Context(), userID, transactionType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -46,4 +49,31 @@ func (h *TransactionHandler) getTransactions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, transactions)
+}
+
+func (h *TransactionHandler) createTransaction(c *gin.Context) {
+	var message domain.CreateTransactionMessage
+	if err := c.ShouldBindJSON(&message); err != nil {
+		h.log.Error("invalid request body", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON"})
+		return
+	}
+
+	// Validate here before sending to Kafka
+	if message.UserID == "" || message.Amount <= 0 ||
+		(message.Type != "bet" && message.Type != "win") {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid transaction data"})
+		return
+	}
+	
+	// Send to Kafka
+	err := h.writer.Publish(c.Request.Context(), message)
+	if err != nil {
+		h.log.Error("failed to publish to Kafka", "err", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not enqueue message"})
+		return
+	}
+
+	h.log.Info("transaction enqueued", "user_id", message.UserID)
+	c.JSON(http.StatusAccepted, gin.H{"status": "queued"})
 }

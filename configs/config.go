@@ -32,4 +32,5 @@ func Init() {
 	viper.SetDefault("DB_MAX_CONNS", 5)
 	viper.SetDefault("DB_MAX_CONN_LIFETIME", "300s")
 	viper.SetDefault("REDIS_PASSWORD", "")
+	viper.SetDefault("KAFKA_ADDRESS", "localhost:9092")
 }

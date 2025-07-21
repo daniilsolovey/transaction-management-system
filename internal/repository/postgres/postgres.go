@@ -25,23 +25,31 @@ func (r *Repository) SaveTransaction(ctx context.Context, transaction domain.Tra
 	return err
 }
 
-func (r *Repository) GetFilteredTransactions(ctx context.Context, userID string, txType string) ([]domain.Transaction, error) {
+func (r *Repository) GetFilteredTransactions(ctx context.Context,
+	userID string, transactionType string) ([]domain.Transaction, error) {
 	builder := r.sql.
 		Select("user_id", "transaction_type", "amount", "timestamp").
 		From("transactions").
 		OrderBy("timestamp DESC")
 
+	// Filter by user ID if provided
 	if userID != "" {
 		builder = builder.Where(squirrel.Eq{"user_id": userID})
 	}
 
-	if txType != "" && txType != "all" {
-		builder = builder.Where(squirrel.Eq{"transaction_type": txType})
+	// Normalize and apply transaction type filter
+	switch transactionType {
+	case "bet", "win":
+		builder = builder.Where(squirrel.Eq{"transaction_type": transactionType})
+	case "", "all":
+		// No filtering
+	default:
+		r.log.Warn("unsupported transaction type filter", "type", transactionType)
 	}
 
 	query, args, err := builder.ToSql()
 	if err != nil {
-		r.log.Error("failed to build select", "err", err)
+		r.log.Error("failed to build select query", "err", err)
 		return nil, err
 	}
 
@@ -55,7 +63,8 @@ func (r *Repository) GetFilteredTransactions(ctx context.Context, userID string,
 	var result []domain.Transaction
 	for rows.Next() {
 		var tx domain.Transaction
-		if err := rows.Scan(&tx.UserID, &tx.Type, &tx.Amount, &tx.Timestamp); err != nil {
+		err := rows.Scan(&tx.UserID, &tx.Type, &tx.Amount, &tx.Timestamp)
+		if err != nil {
 			return nil, err
 		}
 		result = append(result, tx)

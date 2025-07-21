@@ -1,35 +1,15 @@
-package kafka
+package kafka_broker
 
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 
 	"github.com/daniilsolovey/transaction-management-system/internal/domain"
 	"github.com/segmentio/kafka-go"
 )
 
-type TransactionUseCase interface {
-	Create(ctx context.Context, dto domain.CreateTransactionMessage) error
-}
-
-type Consumer struct {
-	reader  *kafka.Reader
-	usecase TransactionUseCase
-	log     *slog.Logger
-}
-
-func NewConsumer(brokers []string, topic, groupID string, uc TransactionUseCase, log *slog.Logger) *Consumer {
-	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers: brokers,
-		GroupID: groupID,
-		Topic:   topic,
-	})
-	return &Consumer{reader: r, usecase: uc, log: log}
-}
-
-// Run starts the consumer loop.
-func (c *Consumer) Run(ctx context.Context) {
+// RunConsumer starts the consumer loop.
+func (c *Consumer) RunConsumer(ctx context.Context) {
 	c.log.Info("Starting Kafka consumer", "topic", c.reader.Config().Topic)
 	defer c.reader.Close()
 
@@ -52,12 +32,34 @@ func (c *Consumer) Run(ctx context.Context) {
 				continue
 			}
 
-			if err := c.usecase.Create(ctx, message); err != nil {
+			err = c.usecase.Create(ctx, message)
+			if err != nil {
 				c.log.Error("failed to process transaction", "error", err)
-				// Here you would implement a retry or dead-letter queue strategy
+				// Retry later — don't commit
+				continue
 			}
 
-			c.reader.CommitMessages(ctx, msg)
+			err = c.reader.CommitMessages(ctx, msg)
+			if err != nil {
+				c.log.Error("failed to commit message", "err", err)
+			}
 		}
 	}
+}
+
+func (w *Writer) Publish(ctx context.Context, message domain.CreateTransactionMessage) error {
+	data, err := json.Marshal(message)
+	if err != nil {
+		w.log.Error("failed to marshal Kafka message", "err", err)
+		return err
+	}
+
+	err = w.writer.WriteMessages(ctx, kafka.Message{Value: data})
+	if err != nil {
+		w.log.Error("failed to publish to Kafka", "err", err)
+		return err
+	}
+
+	w.log.Info("message published to Kafka", "user_id", message.UserID)
+	return nil
 }
