@@ -1,0 +1,96 @@
+basePath: /
+definitions:
+  delivery.StatsRequest:
+    properties:
+      from:
+        type: string
+      to:
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact: {}
+  description: API for counting banner clicks and retrieving statistics
+  title: Clicks Counter API
+  version: "1.0"
+paths:
+  /counter/{bannerID}:
+    get:
+      description: Increments click count for a given banner
+      parameters:
+      - description: Banner ID
+        in: path
+        name: bannerID
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Increment click counter
+      tags:
+      - counter
+  /stats/{bannerID}:
+    post:
+      consumes:
+      - application/json
+      description: Returns click stats for banner within date range
+      parameters:
+      - description: Banner ID
+        in: path
+        name: bannerID
+        required: true
+        type: string
+      - description: Date range
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/delivery.StatsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get stats for banner
+      tags:
+      - stats
+  /stats/all-stats:
+    get:
+      description: Returns all banner click stats
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all stats
+      tags:
+      - stats
+swagger: "2.0"
