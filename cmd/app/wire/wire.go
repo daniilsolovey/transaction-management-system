@@ -6,6 +6,9 @@ package wire
 import (
 	"log/slog"
 
+	"github.com/daniilsolovey/transaction-management-system/internal/pkg/grpcserver"
+	"github.com/daniilsolovey/transaction-management-system/internal/repository/postgres"
+	"github.com/daniilsolovey/transaction-management-system/internal/repository/redis"
 	"github.com/google/wire"
 )
 

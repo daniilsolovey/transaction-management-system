@@ -65,7 +65,7 @@ func (h *TransactionHandler) createTransaction(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid transaction data"})
 		return
 	}
-	
+
 	// Send to Kafka
 	err := h.writer.Publish(c.Request.Context(), message)
 	if err != nil {
@@ -74,6 +74,6 @@ func (h *TransactionHandler) createTransaction(c *gin.Context) {
 		return
 	}
 
-	h.log.Info("transaction enqueued", "user_id", message.UserID)
+	h.log.Info("transaction created", "user_id", message.UserID)
 	c.JSON(http.StatusAccepted, gin.H{"status": "queued"})
 }

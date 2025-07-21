@@ -13,8 +13,6 @@ type Repository struct {
 }
 
 type IRepository interface {
-	InsertClickKey(ctx context.Context, key string) error
-	GetKeys(ctx context.Context) ([]string, error)
 	GetValueByKey(ctx context.Context, key string) (int, error)
 	Del(ctx context.Context, key string) error
 	Close() error

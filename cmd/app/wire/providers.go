@@ -2,6 +2,7 @@ package wire
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"time"
@@ -35,7 +36,10 @@ func ProvidePostgres(logger *slog.Logger) (*postgres.Repository, error) {
 }
 
 func ProvideRedis(logger *slog.Logger) (*redis.Repository, error) {
-	addr := viper.GetString("REDIS_ADDR")
+	host := viper.GetString("REDIS_HOST")    // "redis"
+	port := viper.GetString("REDIS_PORT")    // "6379"
+	addr := fmt.Sprintf("%s:%s", host, port) // "redis:6379"
+
 	password := viper.GetString("REDIS_PASSWORD")
 	db := viper.GetInt("REDIS_DB")
 
