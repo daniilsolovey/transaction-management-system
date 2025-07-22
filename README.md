@@ -164,6 +164,12 @@ curl -X POST http://localhost:3000/transactions \
   }'
 ```
 
+Run unit tests:
+
+```bash
+make test
+```
+
 ---
 
 ## 🛠️ Development

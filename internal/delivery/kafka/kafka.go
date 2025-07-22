@@ -28,7 +28,7 @@ func (c *Consumer) RunConsumer(ctx context.Context) {
 			var message domain.CreateTransactionMessage
 			if err := json.Unmarshal(msg.Value, &message); err != nil {
 				c.log.Error("failed to unmarshal message", "error", err)
-				c.reader.CommitMessages(ctx, msg) // Commit poison pill to avoid reprocessing
+				c.reader.CommitMessages(ctx, msg)
 				continue
 			}
 

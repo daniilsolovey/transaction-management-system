@@ -20,7 +20,8 @@ type TransactionUseCase struct {
 	log  *slog.Logger
 }
 
-func NewTransactionUseCase(repo repository.IRepository, log *slog.Logger) *TransactionUseCase {
+func NewTransactionUseCase(repo repository.IRepository,
+	log *slog.Logger) *TransactionUseCase {
 	return &TransactionUseCase{repo: repo, log: log}
 }
 
@@ -75,7 +76,8 @@ func (uc *TransactionUseCase) Create(ctx context.Context,
 func (uc *TransactionUseCase) Get(ctx context.Context,
 	userID, transactionType string) ([]domain.Transaction, error) {
 	uc.log.Info("retrieving transactions", "user_id", userID, "type", transactionType)
-	transactions, err := uc.repo.Postgres().GetFilteredTransactions(ctx, userID, transactionType)
+	transactions, err := uc.repo.Postgres().GetFilteredTransactions(ctx,
+		userID, transactionType)
 	if err != nil {
 		uc.log.Error("failed to retrieve transactions", "err", err)
 		return nil, err
