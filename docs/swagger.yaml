@@ -1,64 +1,86 @@
 basePath: /
 definitions:
-  delivery.StatsRequest:
+  domain.CreateTransactionMessage:
     properties:
-      from:
+      amount:
+        type: number
+      timestamp:
+        description: 'Optional: can be filled in if not present'
         type: string
-      to:
+      transaction_type:
+        description: '"bet" or "win"'
+        type: string
+      user_id:
+        type: string
+    type: object
+  domain.Transaction:
+    properties:
+      amount:
+        type: number
+      timestamp:
+        type: string
+      transaction_type:
+        type: string
+      user_id:
         type: string
     type: object
 host: localhost:3000
 info:
   contact: {}
-  description: API for counting banner clicks and retrieving statistics
-  title: Clicks Counter API
+  description: API for managing user transactions via Kafka and PostgreSQL
+  title: Transaction Manager API
   version: "1.0"
 paths:
-  /counter/{bannerID}:
+  /transactions:
     get:
-      description: Increments click count for a given banner
+      description: Get transactions by user ID and optional type
       parameters:
-      - description: Banner ID
-        in: path
-        name: bannerID
+      - description: User ID
+        in: query
+        name: user_id
         required: true
         type: string
-      responses:
-        "200":
-          description: OK
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Increment click counter
-      tags:
-      - counter
-  /stats/{bannerID}:
-    post:
-      consumes:
-      - application/json
-      description: Returns click stats for banner within date range
-      parameters:
-      - description: Banner ID
-        in: path
-        name: bannerID
-        required: true
+      - description: Transaction type (bet|win)
+        in: query
+        name: type
         type: string
-      - description: Date range
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/delivery.StatsRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
+            items:
+              $ref: '#/definitions/domain.Transaction'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get transactions
+      tags:
+      - transactions
+    post:
+      consumes:
+      - application/json
+      description: Enqueue a new transaction via Kafka
+      parameters:
+      - description: Transaction payload
+        in: body
+        name: transaction
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreateTransactionMessage'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            additionalProperties:
+              type: string
             type: object
         "400":
           description: Bad Request
@@ -72,25 +94,9 @@ paths:
             additionalProperties:
               type: string
             type: object
-      summary: Get stats for banner
+      summary: Create new transaction
       tags:
-      - stats
-  /stats/all-stats:
-    get:
-      description: Returns all banner click stats
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Get all stats
-      tags:
-      - stats
+      - transactions
+schemes:
+- http
 swagger: "2.0"

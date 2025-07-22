@@ -33,7 +33,16 @@ func (h *TransactionHandler) RegisterRoutes() *gin.Engine {
 	return r
 }
 
-// getTransactions handles requests to query transactions.
+// getTransactions godoc
+// @Summary Get transactions
+// @Description Get transactions by user ID and optional type
+// @Tags transactions
+// @Produce json
+// @Param user_id query string true "User ID"
+// @Param type query string false "Transaction type (bet|win)"
+// @Success 200 {array} domain.Transaction
+// @Failure 500 {object} map[string]string
+// @Router /transactions [get]
 func (h *TransactionHandler) getTransactions(c *gin.Context) {
 	userID := c.Query("user_id")
 	transactionType := c.Query("type") //  "bet" or "win"
@@ -51,6 +60,17 @@ func (h *TransactionHandler) getTransactions(c *gin.Context) {
 	c.JSON(http.StatusOK, transactions)
 }
 
+// createTransaction godoc
+// @Summary Create new transaction
+// @Description Enqueue a new transaction via Kafka
+// @Tags transactions
+// @Accept json
+// @Produce json
+// @Param transaction body domain.CreateTransactionMessage true "Transaction payload"
+// @Success 202 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /transactions [post]
 func (h *TransactionHandler) createTransaction(c *gin.Context) {
 	var message domain.CreateTransactionMessage
 	if err := c.ShouldBindJSON(&message); err != nil {

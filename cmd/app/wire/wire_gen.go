@@ -7,7 +7,6 @@
 package wire
 
 import (
-	"github.com/daniilsolovey/transaction-management-system/internal/pkg/grpcserver"
 	"github.com/daniilsolovey/transaction-management-system/internal/repository/postgres"
 	"github.com/daniilsolovey/transaction-management-system/internal/repository/redis"
 	"log/slog"
@@ -25,15 +24,10 @@ func Initialize() (*Service, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	server, err := ProvideRPCServer()
-	if err != nil {
-		return nil, nil, err
-	}
 	service := &Service{
-		Postgres:  repository,
-		Redis:     redisRepository,
-		RPCServer: server,
-		Logger:    logger,
+		Postgres: repository,
+		Redis:    redisRepository,
+		Logger:   logger,
 	}
 	return service, func() {
 	}, nil
@@ -42,8 +36,7 @@ func Initialize() (*Service, func(), error) {
 // wire.go:
 
 type Service struct {
-	Postgres  *postgres.Repository
-	Redis     *redis.Repository
-	RPCServer *grpcserver.Server
-	Logger    *slog.Logger
+	Postgres *postgres.Repository
+	Redis    *redis.Repository
+	Logger   *slog.Logger
 }

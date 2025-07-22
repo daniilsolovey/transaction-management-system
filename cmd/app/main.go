@@ -18,15 +18,25 @@ import (
 	"github.com/spf13/viper"
 
 	kafka_broker "github.com/daniilsolovey/transaction-management-system/internal/delivery/kafka"
+
+	_ "github.com/daniilsolovey/transaction-management-system/docs"
 )
 
 func init() {
 	configs.Init()
 }
 
+// @title Transaction Manager API
+// @version 1.0
+// @description API for managing user transactions via Kafka and PostgreSQL
+// @host localhost:3000
+// @BasePath /
+// @schemes http
+
 func main() {
 	configs.Init()
 
+	// Initialize Postgres, Redis, Logger using wire
 	service, cleanup, err := wire.Initialize()
 	if err != nil {
 		panic(err)
@@ -47,14 +57,15 @@ func main() {
 	}
 
 	// Dependencies
+
 	repo := repository.New(service.Postgres, service.Redis)
 	useCase := usecase.NewTransactionUseCase(repo, service.Logger)
 
-	// Initialize Kafka broker
+	// Initialize Kafka broker using package
 	broker := kafka_broker.NewBroker(useCase, service.Logger)
 	defer broker.Close()
 
-	// Register HTTP routes
+	// Register HTTP routes using package
 	handler := deliveryhttp.NewTransactionHandler(useCase, service.Logger, broker.Writer)
 	engine := handler.RegisterRoutes()
 

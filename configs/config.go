@@ -17,7 +17,10 @@ func Init() {
 	viper.SetConfigType("env")
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Printf("config: no config file loaded (%v), using ENV or defaults", err)
+		log.Printf(
+			"config: no config file loaded (%v), using ENV or defaults",
+			err,
+		)
 	}
 
 	viper.AutomaticEnv()

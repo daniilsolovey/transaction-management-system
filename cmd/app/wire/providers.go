@@ -7,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/daniilsolovey/transaction-management-system/internal/pkg/grpcserver"
 	"github.com/daniilsolovey/transaction-management-system/internal/repository/postgres"
 	"github.com/daniilsolovey/transaction-management-system/internal/repository/redis"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -44,10 +43,6 @@ func ProvideRedis(logger *slog.Logger) (*redis.Repository, error) {
 	db := viper.GetInt("REDIS_DB")
 
 	return redis.New(addr, password, db, logger), nil
-}
-
-func ProvideRPCServer() (*grpcserver.Server, error) {
-	return grpcserver.New(viper.GetInt("GRPC_SERVER_PORT")), nil
 }
 
 func ProvideLogger() *slog.Logger {

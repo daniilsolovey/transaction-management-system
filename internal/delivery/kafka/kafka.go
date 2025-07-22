@@ -47,7 +47,8 @@ func (c *Consumer) RunConsumer(ctx context.Context) {
 	}
 }
 
-func (w *Writer) Publish(ctx context.Context, message domain.CreateTransactionMessage) error {
+func (w *Writer) Publish(ctx context.Context,
+	message domain.CreateTransactionMessage) error {
 	data, err := json.Marshal(message)
 	if err != nil {
 		w.log.Error("failed to marshal Kafka message", "err", err)

@@ -15,51 +15,39 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/counter/{bannerID}": {
+        "/transactions": {
             "get": {
-                "description": "Increments click count for a given banner",
-                "tags": [
-                    "counter"
+                "description": "Get transactions by user ID and optional type",
+                "produces": [
+                    "application/json"
                 ],
-                "summary": "Increment click counter",
+                "tags": [
+                    "transactions"
+                ],
+                "summary": "Get transactions",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Banner ID",
-                        "name": "bannerID",
-                        "in": "path",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "query",
                         "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
                     },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
+                    {
+                        "type": "string",
+                        "description": "Transaction type (bet|win)",
+                        "name": "type",
+                        "in": "query"
                     }
-                }
-            }
-        },
-        "/stats/all-stats": {
-            "get": {
-                "description": "Returns all banner click stats",
-                "tags": [
-                    "stats"
                 ],
-                "summary": "Get all stats",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.Transaction"
+                            }
                         }
                     },
                     "500": {
@@ -72,11 +60,9 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/stats/{bannerID}": {
+            },
             "post": {
-                "description": "Returns click stats for banner within date range",
+                "description": "Enqueue a new transaction via Kafka",
                 "consumes": [
                     "application/json"
                 ],
@@ -84,33 +70,28 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "stats"
+                    "transactions"
                 ],
-                "summary": "Get stats for banner",
+                "summary": "Create new transaction",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Banner ID",
-                        "name": "bannerID",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Date range",
-                        "name": "request",
+                        "description": "Transaction payload",
+                        "name": "transaction",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/delivery.StatsRequest"
+                            "$ref": "#/definitions/domain.CreateTransactionMessage"
                         }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "400": {
@@ -136,13 +117,38 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "delivery.StatsRequest": {
+        "domain.CreateTransactionMessage": {
             "type": "object",
             "properties": {
-                "from": {
+                "amount": {
+                    "type": "number"
+                },
+                "timestamp": {
+                    "description": "Optional: can be filled in if not present",
                     "type": "string"
                 },
-                "to": {
+                "transaction_type": {
+                    "description": "\"bet\" or \"win\"",
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.Transaction": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "transaction_type": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
@@ -155,9 +161,9 @@ var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:3000",
 	BasePath:         "/",
-	Schemes:          []string{},
-	Title:            "Clicks Counter API",
-	Description:      "API for counting banner clicks and retrieving statistics",
+	Schemes:          []string{"http"},
+	Title:            "Transaction Manager API",
+	Description:      "API for managing user transactions via Kafka and PostgreSQL",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }
