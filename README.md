@@ -180,3 +180,9 @@ swag init
 go run cmd/main.go
 ```
 
+
+## RUN
+
+```bash
+make up
+```
