@@ -1,0 +1,73 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ${SERVICE_NAME}-app
+    env_file:
+      - envs/.env.dev
+    ports:
+      - "${HTTP_PORT}:${HTTP_PORT}"
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15
+    container_name: postgres-${SERVICE_NAME}
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: app_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    container_name: redis-${SERVICE_NAME}
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    restart: unless-stopped
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-kraft
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    entrypoint: >
+      bash -c '
+        if [ ! -f "/var/lib/kafka/data/meta.properties" ]; then
+          CLUSTER_ID=$$(kafka-storage random-uuid)
+          echo "Formatting storage with CLUSTER_ID=$$CLUSTER_ID"
+          kafka-storage format -t $$CLUSTER_ID -c /etc/kafka/kafka-server.properties --ignore-formatted
+        fi
+        exec /etc/confluent/docker/run
+      '
+    restart: unless-stopped
+
+
+volumes:
+  pgdata:
+  kafka_data:
